@@ -112,8 +112,22 @@ def load_submissions(client: SecClient, cik) -> tuple[dict, pd.DataFrame]:
     for f in meta["filings"].get("files", []):
         frames.append(_filings_frame(client.get_json(f"{SEC_DATA}/submissions/{f['name']}")))
     filings = pd.concat(frames, ignore_index=True)
-    filings["filingDate"] = pd.to_datetime(filings["filingDate"]).dt.date
+    filings["filingDate"] = parse_edgar_dates(filings["filingDate"], f"CIK {cik}")
+    filings = filings[filings["filingDate"].notna()].reset_index(drop=True)
     return meta, filings
+
+
+def parse_edgar_dates(s: pd.Series, context: str = "") -> pd.Series:
+    """
+    EDGAR 날짜(YYYY-MM-DD)를 형식을 고정해 파싱한다. pandas 의 형식 추측에 맡기지 않는다.
+    빈 값은 None 으로 두고, 형식이 다른 값이 있으면 조용히 버리지 않고 오류로 알린다.
+    """
+    raw = s.fillna("").astype(str).str.strip()
+    parsed = pd.to_datetime(raw, format="%Y-%m-%d", errors="coerce")
+    bad = raw[(raw != "") & parsed.isna()]
+    if len(bad):
+        raise ValueError(f"{context} 날짜 형식 오류 {len(bad)}건, 예: {bad.unique()[:5].tolist()}")
+    return pd.Series([d.date() if pd.notna(d) else None for d in parsed], index=s.index, dtype=object)
 
 
 def find_13f(filings: pd.DataFrame, report_date: str) -> tuple[pd.Series, pd.DataFrame]:

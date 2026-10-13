@@ -157,3 +157,12 @@ def test_client_gives_up_after_max_retries(tmp_path, monkeypatch):
     with pytest.raises(requests.HTTPError):
         c.get_bytes("https://data.sec.gov/y.json")
     assert not any(tmp_path.iterdir())  # 실패 응답은 캐시에 남기지 않는다
+
+
+def test_parse_edgar_dates_fixed_format():
+    s = pd.Series(["2026-09-23", "2004-03-01", "", None])
+    out = k.parse_edgar_dates(s)
+    assert out.iloc[0] == date(2026, 9, 23) and out.iloc[1] == date(2004, 3, 1)
+    assert out.iloc[2] is None and out.iloc[3] is None
+    with pytest.raises(ValueError):
+        k.parse_edgar_dates(pd.Series(["2026-Sep-23"]))
