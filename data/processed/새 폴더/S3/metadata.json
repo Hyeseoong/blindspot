@@ -1,0 +1,31 @@
+{
+  "sample": "S3",
+  "filer_cik": 1441689,
+  "accession": "0000950123-22-008583",
+  "report_date": "2022-06-30",
+  "filing_date": "2022-08-12",
+  "acceptance_datetime": "2022-08-12T10:31:09.000Z",
+  "amendments_ignored": [],
+  "info_table_url": "https://www.sec.gov/Archives/edgar/data/1441689/000095012322008583/15856.xml",
+  "value_multiplier": 1000,
+  "tenk_cutoff_exclusive": "2022-10-07",
+  "sic_rule": "historical ASSIGNED-SIC",
+  "rows_raw": 762,
+  "cusips_after_filter": 762,
+  "mapping_status_counts": {
+    "exact": 443,
+    "failed": 292,
+    "review": 25,
+    "manual": 2
+  },
+  "protocol": "experiment_protocol.md v1.0",
+  "run_at_utc": "2026-10-13T12:37:40.126894+00:00",
+  "p1": {
+    "sample": "S3",
+    "selected_issuers": 12,
+    "target": 12,
+    "boundary_value_usd": 313720000.0,
+    "unmapped_at_or_above_boundary": 0,
+    "pass": true
+  }
+}

@@ -81,6 +81,55 @@ ROWS_2022 = [
 ]
 
 
+# 모의 10-K 본문: (Item 1 문장, Item 1A 문장, Item 7 문장, 지역 매출 표 행 목록)
+TEN_K_TEXT = {
+    101: ("We design accelerated computing platforms used for AI training in data centers.",
+          "Our products are subject to U.S. export license requirements for shipments of our H-class accelerators to China.",
+          "Data center revenue increased 80% driven by demand for AI infrastructure.",
+          [("United States", "40,000"), ("China (including Hong Kong)", "12,000"), ("Taiwan", "20,000")]),
+    102: ("We sell personal computing devices and services.",
+          "Changes in trade policy, including export controls, could adversely affect our business.",
+          "Net sales in Greater China decreased 5% due to weaker demand.",
+          [("Americas", "160,000"), ("Greater China", "66,000")]),
+    103: ("We offer search, advertising and cloud services. The AI industry is evolving rapidly.",
+          "We face competition from companies developing artificial intelligence.",
+          "Advertising revenue grew due to higher search queries.",
+          [("United States", "150,000"), ("EMEA", "90,000")]),
+    104: ("Our cloud platform provides AI services to enterprises.",
+          "Our manufacturing partners operate facilities in China.",
+          "Cloud revenue increased 30% driven by demand for our AI services.",
+          [("United States", "130,000"), ("Other countries", "110,000")]),
+    105: ("We operate online stores and a cloud infrastructure business.",
+          "General economic conditions may affect consumer demand.",
+          "We increased capital expenditures for data centers to support AI workloads.",
+          [("North America", "350,000"), ("International", "140,000")]),
+    106: ("We build social media platforms and invest in AI research.",
+          "Regulation of online platforms may affect our advertising business.",
+          "Advertising revenue increased 15%.",
+          [("United States and Canada", "60,000"), ("Rest of world", "70,000")]),
+}
+
+
+def _ten_k_html(name, item1, item1a, item7, geo_rows) -> bytes:
+    rows = "".join(f"<tr><td>{r}</td><td>$</td><td>{v}</td></tr>" for r, v in geo_rows)
+    return f"""<html><body>
+<div style="display:none"><ix:header>hidden China AI export control</ix:header></div>
+<p>{name} — ANNUAL REPORT ON FORM 10-K</p>
+<table><tr><td>Item 1.</td><td>Business</td><td>3</td></tr>
+<tr><td>Item 1A.</td><td>Risk Factors</td><td>10</td></tr>
+<tr><td>Item 7.</td><td>MD&amp;A</td><td>30</td></tr>
+<tr><td>Item 8.</td><td>Financial Statements</td><td>50</td></tr></table>
+<p>Item 1. Business</p><div><span>{item1}</span></div><p>We have about 10,000 employees.</p>
+<p>Item 1A. Risk Factors</p><p>{item1a}</p><p>Our stock price may be volatile.</p>
+<p>Item 1B. Unresolved Staff Comments</p><p>None.</p>
+<p>Item 7. Management's Discussion and Analysis</p><p>{item7}</p>
+<p>Item 8. Financial Statements and Supplementary Data</p>
+<p>Revenue by geographic area was as follows (in millions):</p>
+<table>{rows}</table>
+<p>Item 9. Changes in and Disagreements with Accountants</p><p>None.</p>
+</body></html>""".encode()
+
+
 def _info_table_xml(rows) -> bytes:
     parts = [f'<?xml version="1.0" encoding="UTF-8"?><informationTable xmlns="{NS}">']
     for cusip, name, cls, value, put_call in rows:
@@ -134,8 +183,13 @@ def build_store() -> dict[str, bytes]:
             for y in range(y0, 2027):
                 acc = f"{cik:010d}-{str(y)[2:]}-000001"
                 fdate = first_10k if y == y0 else f"{y}-02-20"
+                doc_name = f"t{cik}-{y}10k.htm"
                 filings.append({"accessionNumber": acc, "filingDate": fdate, "form": "10-K",
-                                "reportDate": f"{y-1}-12-31", "acceptanceDateTime": f"{fdate}T09:00:00.000Z"})
+                                "reportDate": f"{y-1}-12-31", "acceptanceDateTime": f"{fdate}T09:00:00.000Z",
+                                "primaryDocument": doc_name})
+                if y == 2026 and cik in TEN_K_TEXT:
+                    store[f"{SEC_WWW}/Archives/edgar/data/{cik}/{acc_nodash(acc)}/{doc_name}"] = \
+                        _ten_k_html(edgar, *TEN_K_TEXT[cik])
                 if sic_2022:
                     base = f"{SEC_WWW}/Archives/edgar/data/{cik}/{acc_nodash(acc)}"
                     store[f"{base}/{acc}-index-headers.html"] = (

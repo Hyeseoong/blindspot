@@ -6,3 +6,8 @@ __pycache__/
 # SEC 원본 응답 캐시는 용량이 커서 저장소에 넣지 않는다 (metadata.json 에 URL·접수번호 기록)
 data/raw/
 data/processed_fixture/
+data/labeling_fixture/
+
+# 10-K 문단 추출본과 키워드 적중 목록은 캐시에서 다시 만들 수 있으므로 제외 (라벨 시트는 커밋)
+data/labeling/docs/
+data/labeling/hits/

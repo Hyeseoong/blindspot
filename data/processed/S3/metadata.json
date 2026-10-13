@@ -14,17 +14,18 @@
   "cusips_after_filter": 762,
   "mapping_status_counts": {
     "exact": 443,
-    "failed": 294,
-    "review": 25
+    "failed": 292,
+    "review": 25,
+    "manual": 2
   },
   "protocol": "experiment_protocol.md v1.0",
-  "run_at_utc": "2026-10-13T12:08:19.867781+00:00",
+  "run_at_utc": "2026-10-13T12:37:40.126894+00:00",
   "p1": {
     "sample": "S3",
     "selected_issuers": 12,
     "target": 12,
-    "boundary_value_usd": 297330000.0,
-    "unmapped_at_or_above_boundary": 1,
-    "pass": false
+    "boundary_value_usd": 313720000.0,
+    "unmapped_at_or_above_boundary": 0,
+    "pass": true
   }
 }

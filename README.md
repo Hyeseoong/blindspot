@@ -8,9 +8,13 @@
 |---|---|
 | `experiment_protocol.md` | 실험 프로토콜 v1.0 (사전 등록) |
 | `agent_test_cases.md` | Agent 경로 테스트 v1.0 (사전 등록) |
+| `labeling_guide.md` | P2 정답 라벨 판정 기준 v1.0 (사전 등록) |
 | `experiment_log.md` | 사전 등록 커밋 해시와 실행 기록 |
 | `src/kic13f.py` | P1: KIC 13F 기반 표본(S1, S3) 구성 |
+| `src/filings.py` | P2: 10-K 문단 추출, 항목 구분, 키워드 적중, 인용 검증 |
 | `notebooks/01_kic_13f_extraction.ipynb` | P1 실행 노트북 |
+| `notebooks/02_exposure_labeling.ipynb` | P2 라벨링 준비·검증 노트북 |
+| `data/labeling/labels_P2.csv` | 사람이 작성한 P2 정답 라벨 (LLM 실행 전 커밋) |
 | `tests/` | 모의 SEC 응답 기반 처리 규칙 검증 |
 | `data/manual/cusip_cik_manual.csv` | CUSIP→CIK 수작업 대응표 |
 
