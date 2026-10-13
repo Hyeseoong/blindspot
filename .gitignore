@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# SEC 원본 응답 캐시는 용량이 커서 저장소에 넣지 않는다 (metadata.json 에 URL·접수번호 기록)
+data/raw/
+data/processed_fixture/

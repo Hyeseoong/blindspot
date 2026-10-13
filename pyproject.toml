@@ -1,0 +1,20 @@
+[project]
+name = "blindspot"
+version = "0.1.0"
+description = "Blind Spot — KIC AI Agent 공모전 파일럿 (13F 표본 구성 외)"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.2",
+    "requests>=2.31",
+    "lxml>=5.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ipykernel>=6.29",
+    "jupyter>=1.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
