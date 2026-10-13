@@ -98,3 +98,62 @@ def test_client_rejects_placeholder_user_agent(tmp_path):
         k.SecClient("Blind Spot your_email@example.com", tmp_path)
     with pytest.raises(ValueError):
         k.SecClient("홍길동 me@uni.ac.kr", tmp_path)
+
+
+class _ErrorClient(FakeClient):
+    """특정 상태 코드로 실패하는 클라이언트 (API 장애 모사)."""
+
+    def __init__(self, status):
+        super().__init__()
+        self.status = status
+
+    def get_bytes(self, url):
+        import requests
+        resp = requests.Response()
+        resp.status_code = self.status
+        raise requests.HTTPError(f"{self.status}", response=resp)
+
+
+def test_historical_sic_api_failure_is_not_hidden():
+    import requests
+    # 404 는 데이터 부재 → None
+    assert k.historical_sic(_ErrorClient(404), 101, "0000000101-22-000001") is None
+    # 429·403 은 '분류 확인 불가'로 숨기지 않고 예외로 올라와야 한다
+    for status in (429, 403):
+        with pytest.raises(requests.HTTPError):
+            k.historical_sic(_ErrorClient(status), 101, "0000000101-22-000001")
+
+
+def test_client_retries_transient_status(tmp_path, monkeypatch):
+    import requests
+    monkeypatch.setattr(k.time, "sleep", lambda s: None)
+    calls = []
+
+    def fake_get(url, timeout):
+        calls.append(url)
+        r = requests.Response()
+        r.status_code = 429 if len(calls) < 3 else 200
+        r._content = b'{"ok": true}'
+        return r
+
+    c = k.SecClient("Test User test@uni.ac.kr", tmp_path)
+    monkeypatch.setattr(c.session, "get", fake_get)
+    assert c.get_json("https://data.sec.gov/x.json") == {"ok": True}
+    assert len(calls) == 3
+    assert [e.get("status") for e in c.log if e["source"] == "error"] == [429, 429]
+
+
+def test_client_gives_up_after_max_retries(tmp_path, monkeypatch):
+    import requests
+    monkeypatch.setattr(k.time, "sleep", lambda s: None)
+
+    def always_503(url, timeout):
+        r = requests.Response()
+        r.status_code = 503
+        return r
+
+    c = k.SecClient("Test User test@uni.ac.kr", tmp_path, max_retries=2)
+    monkeypatch.setattr(c.session, "get", always_503)
+    with pytest.raises(requests.HTTPError):
+        c.get_bytes("https://data.sec.gov/y.json")
+    assert not any(tmp_path.iterdir())  # 실패 응답은 캐시에 남기지 않는다

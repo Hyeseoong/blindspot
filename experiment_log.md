@@ -7,8 +7,8 @@
 | 항목 | 값 |
 |---|---|
 | 문서 | `experiment_protocol.md` v1.0, `agent_test_cases.md` v1.0 |
-| 첫 커밋 해시 | 3210cff5d8dfd3dc95bf3bc53b7d4993502cf246 |
-| 원격 저장소 푸시 일시 | |
+| 첫 커밋 해시 | 297c8bc734c955dc98b2bf9f6d4210285edbb6be |
+| 원격 저장소 푸시 일시 | 21:22 |
 
 ## 실행 기록
 

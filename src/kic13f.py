@@ -27,6 +27,8 @@ VALUE_IN_DOLLARS_FROM = date(2023, 1, 3)
 
 TEN_K_FORMS = {"10-K", "10-K405", "10-KT"}  # 정정 공시(/A)는 적격성 판단에 쓰지 않는다
 
+RETRY_STATUS = {429, 500, 502, 503, 504}  # 일시적 장애로 보고 지수적 대기 후 재시도
+
 
 # ---------------------------------------------------------------------------
 # HTTP 클라이언트 (캐시 + 속도 제한)
@@ -34,7 +36,7 @@ TEN_K_FORMS = {"10-K", "10-K405", "10-KT"}  # 정정 공시(/A)는 적격성 판
 class SecClient:
     """SEC EDGAR 접근용 클라이언트. SEC 정책상 연락처가 담긴 User-Agent 가 필요하다."""
 
-    def __init__(self, user_agent: str, cache_dir: Path, min_interval: float = 0.12):
+    def __init__(self, user_agent: str, cache_dir: Path, min_interval: float = 0.12, max_retries: int = 3):
         if "@" not in user_agent or "example.com" in user_agent:
             raise ValueError("USER_AGENT 에 본인 이름과 실제 이메일을 넣어야 합니다 (SEC 접근 정책).")
         if not user_agent.isascii():
@@ -44,6 +46,7 @@ class SecClient:
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.min_interval = min_interval
+        self.max_retries = max_retries
         self._last = 0.0
         self.log: list[dict] = []
 
@@ -55,12 +58,28 @@ class SecClient:
         if path.exists():
             self.log.append({"url": url, "source": "cache"})
             return path.read_bytes()
-        wait = self.min_interval - (time.monotonic() - self._last)
-        if wait > 0:
-            time.sleep(wait)
-        resp = self.session.get(url, timeout=30)
-        self._last = time.monotonic()
-        resp.raise_for_status()
+        resp = None
+        for attempt in range(self.max_retries + 1):
+            wait = self.min_interval - (time.monotonic() - self._last)
+            if wait > 0:
+                time.sleep(wait)
+            try:
+                resp = self.session.get(url, timeout=30)
+            except (requests.ConnectionError, requests.Timeout) as e:
+                self._last = time.monotonic()
+                self.log.append({"url": url, "source": "error", "attempt": attempt, "error": repr(e)})
+                if attempt == self.max_retries:
+                    raise
+                time.sleep(2 ** attempt)
+                continue
+            self._last = time.monotonic()
+            if resp.status_code in RETRY_STATUS and attempt < self.max_retries:
+                self.log.append({"url": url, "source": "error", "attempt": attempt,
+                                 "status": resp.status_code})
+                time.sleep(2 ** attempt)
+                continue
+            break
+        resp.raise_for_status()  # 404 는 데이터 부재, 그 외는 API 장애로 호출부에서 구분
         path.write_bytes(resp.content)
         path.with_suffix(".url").write_text(url)
         self.log.append({"url": url, "source": "network",
@@ -250,8 +269,12 @@ def historical_sic(client: SecClient, cik, accession: str) -> str | None:
     for url in (f"{base}/{accession}-index-headers.html", f"{base}/{accession}.hdr.sgml"):
         try:
             text = client.get_text(url)
-        except requests.HTTPError:
-            continue
+        except requests.HTTPError as e:
+            # 404(파일 없음)만 '데이터 부재'로 본다. 429·403·5xx 같은 API 장애는
+            # '분류 확인 불가'로 숨기지 않고 그대로 올려 실행을 멈춘다.
+            if e.response is not None and e.response.status_code == 404:
+                continue
+            raise
         for pat in _SIC_PATTERNS:
             m = pat.search(text)
             if m:

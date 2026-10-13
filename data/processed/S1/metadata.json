@@ -1,0 +1,30 @@
+{
+  "sample": "S1",
+  "filer_cik": 1441689,
+  "accession": "0001193125-26-345356",
+  "report_date": "2026-06-30",
+  "filing_date": "2026-08-12",
+  "acceptance_datetime": "2026-08-12T00:22:46.000Z",
+  "amendments_ignored": [],
+  "info_table_url": "https://www.sec.gov/Archives/edgar/data/1441689/000119312526345356/56882.xml",
+  "value_multiplier": 1,
+  "tenk_cutoff_exclusive": "2026-08-12",
+  "sic_rule": "current SIC",
+  "rows_raw": 677,
+  "cusips_after_filter": 677,
+  "mapping_status_counts": {
+    "exact": 440,
+    "failed": 204,
+    "review": 33
+  },
+  "protocol": "experiment_protocol.md v1.0",
+  "run_at_utc": "2026-10-13T12:08:15.968145+00:00",
+  "p1": {
+    "sample": "S1",
+    "selected_issuers": 12,
+    "target": 12,
+    "boundary_value_usd": 534768841.0,
+    "unmapped_at_or_above_boundary": 1,
+    "pass": false
+  }
+}
