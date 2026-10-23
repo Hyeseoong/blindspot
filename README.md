@@ -14,7 +14,10 @@
 | `src/filings.py` | P2: 10-K 문단 추출, 항목 구분, 키워드 적중, 인용 검증 |
 | `notebooks/01_kic_13f_extraction.ipynb` | P1 실행 노트북 |
 | `notebooks/02_exposure_labeling.ipynb` | P2 라벨링 준비·검증 노트북 |
+| `src/llm_extract.py` | P2: LLM 노출 추출, 실행 잠금, 정답 라벨 비교 |
+| `notebooks/03_llm_extraction.ipynb` | P2 LLM 실행·비교 노트북 (정답 라벨 커밋 후에만 실행) |
 | `data/labeling/labels_P2.csv` | 사람이 작성한 P2 정답 라벨 (LLM 실행 전 커밋) |
+| `data/labeling/llm_runs/` | LLM 실행 기록 (원본 응답, 프롬프트 해시, 비교 결과) |
 | `tests/` | 모의 SEC 응답 기반 처리 규칙 검증 |
 | `data/manual/cusip_cik_manual.csv` | CUSIP→CIK 수작업 대응표 |
 

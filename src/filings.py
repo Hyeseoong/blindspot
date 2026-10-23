@@ -1,7 +1,7 @@
 """
 P2 준비: 10-K 원문을 문단 단위로 추출하고, 라벨링 보조용 키워드 적중 목록을 만든다.
 
-판정은 하지 않는다. 판정 기준은 labeling_guide.md v1.0 을 따른다.
+판정은 하지 않는다. 판정 기준은 labeling_guide.md v1.1 을 따른다.
 """
 from __future__ import annotations
 
@@ -14,8 +14,11 @@ from lxml import html as lxml_html
 
 from kic13f import SEC_WWW, SecClient, acc_nodash, load_submissions
 
-# 라벨링 범위 (labeling_guide.md 1절)
-LABEL_ITEMS = ["1", "1A", "7", "8"]
+# 라벨링 범위 (labeling_guide.md v1.1 1절). 재무제표 주석은 Item 8 또는 Item 15 에 수록된다.
+LABEL_ITEMS = ["1", "1A", "7", "8", "15"]
+CORE_ITEMS = ["1", "1A", "7"]          # 모든 10-K 에 본문이 있어야 하는 항목
+FIN_ITEMS = ["8", "15"]                # 둘 중 하나에 재무제표 주석이 있어야 함
+FIN_MIN_PARAGRAPHS = 3                 # 이보다 짧으면 참조 문장뿐인 것으로 보고 경고 (점검용 휴리스틱)
 
 THEME_PATTERNS = {
     "T1": [r"artificial intelligence", r"\bAI\b", r"generative", r"data ?cent(er|re)s?",
@@ -131,6 +134,20 @@ def assign_items(paragraphs: list[str]) -> pd.DataFrame:
     df = pd.DataFrame({"seq": range(len(paragraphs)), "item": item_of, "text": paragraphs})
     df["pid"] = df["item"] + "-p" + df["seq"].map("{:05d}".format)
     return df[["pid", "item", "seq", "text"]]
+
+
+def coverage_check(df: pd.DataFrame) -> dict:
+    """라벨링 범위가 잡혔는지 점검: 핵심 항목 본문 존재 + 재무제표 주석 위치(Item 8 또는 15)."""
+    counts = df["item"].value_counts()
+    n = {i: int(counts.get(i, 0)) for i in LABEL_ITEMS}
+    fin = max(FIN_ITEMS, key=lambda i: n[i])          # 문단이 더 많은 쪽을 주석 수록 위치로 본다
+    fin_ok = n[fin] >= FIN_MIN_PARAGRAPHS
+    missing_core = [i for i in CORE_ITEMS if n[i] == 0]
+    return {**{f"Item {i}": n[i] for i in LABEL_ITEMS},
+            "fin_notes_in": f"Item {fin}" if fin_ok else "확인 불가",
+            "ok": not missing_core and fin_ok,
+            "issue": "; ".join([f"Item {i} 없음" for i in missing_core]
+                               + ([] if fin_ok else ["재무제표 주석 위치 확인 불가"]))}
 
 
 def item_summary(df: pd.DataFrame) -> pd.DataFrame:

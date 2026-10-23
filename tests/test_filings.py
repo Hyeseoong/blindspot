@@ -85,3 +85,22 @@ def test_validate_labels():
     assert res["ok"].tolist() == [True, False, False]
     assert "searched" in res["problems"].iloc[1]
     assert "허용 안 됨" in res["problems"].iloc[2]
+
+
+def test_coverage_check_financial_notes_location():
+    paras = (["Item 1. Business", "a"] + ["Item 1A. Risk Factors", "b"] + ["Item 7. MD&A", "c"]
+             + ["Item 8. Financial Statements", "See Item 15."]
+             + ["Item 15. Exhibits and Financial Statement Schedules"] + [f"note {i}" for i in range(20)])
+    df = f.assign_items(paras)
+    cov = f.coverage_check(df)
+    assert cov["ok"] and cov["fin_notes_in"] == "Item 15"
+    assert "15" in f.LABEL_ITEMS
+    # Item 15 문단도 키워드 적중 대상이다
+    df.loc[df["text"] == "note 3", "text"] = "Revenue from China was $1,000 million."
+    assert "15" in set(f.keyword_hits(df, "T2a")["item"])
+
+
+def test_coverage_check_flags_missing_core_item():
+    df = f.assign_items(["Item 1. Business", "a", "Item 8. Financial Statements"] + ["n"] * 5)
+    cov = f.coverage_check(df)
+    assert not cov["ok"] and "Item 1A 없음" in cov["issue"]

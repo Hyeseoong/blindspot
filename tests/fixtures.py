@@ -223,3 +223,43 @@ class FakeClient(SecClient):
 
 def fixture_dir_note() -> str:
     return str(Path(__file__).resolve())
+
+
+# ---------------------------------------------------------------------------
+# 03 노트북 모의 모드용: 규칙 기반 가짜 LLM (실제 모델 아님)
+# ---------------------------------------------------------------------------
+class FakeLLM:
+    """첫 번째 적중 문단을 그대로 인용해 T1 은 confirmed, 나머지는 possibly_related 로 답한다."""
+
+    def __init__(self):
+        self.messages = self
+
+    def create(self, **kw):
+        import re
+        from types import SimpleNamespace
+        content = kw["messages"][0]["content"]
+        paras = re.findall(r"^\[([^\]]+)\] (.+)$", content, flags=re.M)
+        if not paras:
+            ans = {"label": "not_found", "exposure_direction": "unknown", "evidence_text": "",
+                   "evidence_location": "", "rationale": "적중 문단 없음 (모의 응답)"}
+        else:
+            pid, text = paras[0]
+            ans = {"label": "confirmed" if "T1 —" in content else "possibly_related",
+                   "exposure_direction": "unknown", "evidence_text": text, "evidence_location": pid,
+                   "rationale": "모의 응답"}
+        return SimpleNamespace(content=[SimpleNamespace(type="text", text=json.dumps(ans, ensure_ascii=False))],
+                               stop_reason="end_turn",
+                               usage=SimpleNamespace(input_tokens=len(content) // 4, output_tokens=50))
+
+
+def demo_labels(sample, docs):
+    """모의 모드 전용 가짜 정답 라벨 (실제 사람 라벨이 아님)."""
+    import pandas as pd
+    rows = []
+    for r in sample.head(5).itertuples(index=False):
+        for theme, label in (("T1", "confirmed"), ("T2a", "not_found"), ("T2b", "not_found")):
+            rows.append({"rank": r.rank, "cik": r.cik, "company": r.edgar_name, "theme": theme,
+                         "label": label, "exposure_direction": "unknown", "evidence_text": "",
+                         "evidence_location": "", "searched": "모의", "note": "", "added_by_rule": "no",
+                         "labeler": "fixture", "labeled_at": ""})
+    return pd.DataFrame(rows)
